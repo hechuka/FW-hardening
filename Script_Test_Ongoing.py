@@ -1,5 +1,5 @@
 import getpass
-
+#import Integration_Ongoing
 nc = 0
 sc = 0
 paoc = 0
@@ -8,7 +8,8 @@ sfc = 0
 vc = 0
 larc = 0
 total = 0
-vdom = ""
+scriptvdom = []
+#scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
 
 #network - done (global) (Level 1)
 def network():
@@ -297,31 +298,37 @@ def system():
 
 #policy and object - undone (vdom) (Level 1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
 def Policy_and_object():
-    global paoc, total, vdom
+    global paoc, total, scriptvdom
     if paoc == 1:
         return None
-    else:
+    else:       
+        # 3.1 Ensure that unused policies are reviewed regularly
+        # No CLI command, complete step in GUI
         commands = [
-            "end",
-            "config vdom",
-            f"edit {vdom}",
-            # 3.1 Ensure that unused policies are reviewed regularly
-            # No CLI command, complete step in GUI
-
-            # 3.2 Ensure that policies do not use "ALL" as Service (vdom)
-            'config firewall policy',
-            'edit 2',
-            'set service "FTP" "SNMP"',
-            'end',
-
+            "end",                 
+        ]
+        for item in range(0,len(scriptvdom)):
+            vdomcommands = [
+                "config vdom",  
+                f"edit {scriptvdom[item]}",
+                # 3.2 Ensure that policies do not use "ALL" as Service (vdom)
+                'config firewall policy',
+                'edit 1',
+                'set service "FTP" "SNMP"',
+                'end',
+                'end',
+            ]
+            commands.extend(vdomcommands)
+            
             # 3.3 Ensure firewall policy denying all traffic to/from Tor, malicious server, or scanner IP addresses using ISDB
             # No CLI command, complete step in GUI
 
             # 3.4 Ensure logging is enabled on all firewall policies
             # No CLI command, complete step in GUI
-            "end",
-            "config global",
-        ]
+
+        commands.extend(["end", "config global",])
+            
+    #print(commands)    
     paoc = 1
     total += 1
     return commands

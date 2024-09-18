@@ -69,6 +69,7 @@ def execute_commands(connection, commands):
     return output
 
 def vdom():
+    global vdom_list
     host = remoteHost
     username = userStr
     password = passStr
@@ -96,6 +97,7 @@ def vdom():
     print("\n",vdom_list)
     print(f'\n{"="*10} Completed and Exiting {"="*10}')
     print(f'\nTime of Completion: {datetime.datetime.now()} SGT')
+    script.scriptvdom = vdom_list
 
 def dictionary(x):
     match x:
