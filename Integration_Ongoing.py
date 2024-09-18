@@ -99,6 +99,9 @@ def vdom():
     print(f'\nTime of Completion: {datetime.datetime.now()} SGT')
     script.scriptvdom = vdom_list
 
+def level():
+    script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
+
 def dictionary(x):
     match x:
         case '1':
@@ -141,6 +144,7 @@ def userchoice(x):
 def mainmenu():
     global useroutput
     vdom() 
+    level()
     while menu == True:
         try:
             user_choice = input("\nPlease select which you would like to harden:\

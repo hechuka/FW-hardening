@@ -38,8 +38,12 @@ def userchoice(x):
         case '0':
             menu = False
 
+def level():
+    script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
+
 def main():
     global output  
+    level()
     while menu == True:
         try:
             user_choice = input("Please select which you would like to harden:\

@@ -8,8 +8,9 @@ sfc = 0
 vc = 0
 larc = 0
 total = 0
-scriptvdom = []
-#scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
+#scriptvdom = []
+level = 0
+scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
 
 #network - done (global) (Level 1)
 def network():
@@ -335,74 +336,79 @@ def Policy_and_object():
 
 #security profiles - undone (global and vdom) (Level 1 and 2)
 def Security_profiles():
-    global spc, total, vdom
+    global spc, total, level, scriptvdom
     if spc == 1:
         return None
     else:
-        profile_name = input("Please enter profile to be edited: ")
         commands = [
-
-            # 4.1.1 Detect Botnet connections
-            # No CLI command, complete step in GUI
-
-            # 4.1.2 Apply IPS Security Profile to Policies
-            # No CLI command, complete step in GUI
-
-            # 4.2.1 Ensure Antivirus Definition Push Updates are Configured (global)
-            "config system autoupdate schedule",
-            "set status enable",
-            "set frequency automatic",
-            "end",
-
-            # 4.2.2 Apply Antivirus Security Profile to Policies
-            # No CLI command, complete step in GUI
-
-            # 4.2.3 Enable Outbreak Prevention Database
-            # No CLI command, complete step in GUI
-
-            # 4.2.4 Enable AI /heuristic based malware detection (vdom)
-            "end"
-            "config vdom"
-            f"edit {vdom}"
-
-            "config antivirus settings",
-            "set machine-learning-detection enable",
-
-            # 4.2.5 Enable grayware detection on antivirus (vdom)
-            "config antivirus settings",
-            "set grayware enable",
-
-            # 4.2.6 Ensure inline scanning with FortiGuard AI-Based Sandbox Service is enabled
-            #not complete
-
-            # 4.3.1 Enable Botnet C&C Domain Blocking DNS Filter
-            # No CLI command, complete step in GUI
-        
-            # 4.3.2 Ensure DNS Filter logs all DNS queries and responses
-            # No CLI command, complete step in GUI
-
-            # 4.3.3 Apply DNS Filter Security Profile to Policies
-            # No CLI command, complete step in GUI
-
-            # 4.4.1 Block high risk categories on Application Control
-            # No CLI command, complete step in GUI
-            "end",
-            "end",
-            "config global",
-
-            # 4.4.2 Block applications running on non-default ports (global)
-            'config application list',
-            f'edit "{profile_name}"',
-            'set enforce-default-app-port enable',
-            'end',
-            # 4.4.3 Ensure all Application Control related traffic is logged
-            # No CLI command, complete step in GUI
-
-            # 4.4.4 Apply Application Control Security Profile to Policies
-            # No CLI command, complete step in GUI
-
-        
+        # 4.2.6 Ensure inline scanning with FortiGuard AI-Based Sandbox Service is enabled
+        #not complete
         ]
+        if level == "2":        
+            profile_name = input("Please enter profile to be edited: ")
+            commands.extend([
+                # 4.2.1 Ensure Antivirus Definition Push Updates are Configured (global)
+                "config system autoupdate schedule",
+                "set status enable",
+                "set frequency automatic",
+                "end",
+
+                # 4.4.2 Block applications running on non-default ports (global)
+                'config application list',
+                f'edit "{profile_name}"',
+                'set enforce-default-app-port enable',
+                'end',
+                "end",
+            ])
+            for item in range(0,len(scriptvdom)):
+                vdomcommands = [
+                    # 4.2.4 Enable AI /heuristic based malware detection (vdom)
+                    "config vdom",
+                    f"edit {scriptvdom[item]}",
+
+                    "config antivirus settings",
+                    "set machine-learning-detection enable",
+
+                    # 4.2.5 Enable grayware detection on antivirus (vdom)
+                    "config antivirus settings",
+                    "set grayware enable",
+
+                    "end",
+                    "end",
+                ]
+                commands.extend(vdomcommands)
+            commands.extend(["end", "config global",])
+                # 4.1.1 Detect Botnet connections
+                # No CLI command, complete step in GUI
+
+                # 4.1.2 Apply IPS Security Profile to Policies
+                # No CLI command, complete step in GUI
+
+                # 4.2.2 Apply Antivirus Security Profile to Policies
+                # No CLI command, complete step in GUI
+
+                # 4.2.3 Enable Outbreak Prevention Database
+                # No CLI command, complete step in GUI
+
+                # 4.3.1 Enable Botnet C&C Domain Blocking DNS Filter
+                # No CLI command, complete step in GUI
+            
+                # 4.3.2 Ensure DNS Filter logs all DNS queries and responses
+                # No CLI command, complete step in GUI
+
+                # 4.3.3 Apply DNS Filter Security Profile to Policies
+                # No CLI command, complete step in GUI
+
+                # 4.4.1 Block high risk categories on Application Control
+                # No CLI command, complete step in GUI
+
+                # 4.4.3 Ensure all Application Control related traffic is logged
+                # No CLI command, complete step in GUI
+
+                # 4.4.4 Apply Application Control Security Profile to Policies
+                # No CLI command, complete step in GUI
+
+            
     spc = 1
     total += 1
     return commands
