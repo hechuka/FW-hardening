@@ -2,9 +2,11 @@ import netmiko
 import getpass
 import datetime
 import Script_Test_Ongoing as script
+import re
 
 menu = True
 useroutput = ['config global',]
+vdom_list = []
 #useroutput = ""
 # Getting the Password but without showing the password; Otherwise use input() for normal data request.
 defaultStr = input('Default IP/Username? Type "y" for default values: ')
@@ -13,7 +15,10 @@ remoteHost = ""
 userStr = ""
 passStr = ""
 
-
+catchvdom = [
+    "config global",
+    "diagnose sys vd list | grep name=",
+]
 
 # Remote Host Details
 if defaultStr.lower() == 'y':
@@ -63,9 +68,34 @@ def execute_commands(connection, commands):
 
     return output
 
-# def execute_command(connection, command):
-#     output = connection.send_command(command)
-#     return output
+def vdom():
+    host = remoteHost
+    username = userStr
+    password = passStr
+
+    print(f'{"="*10} Trying to connect to Fortigate FW.... {"="*10}')
+
+    connection = connect_to_fortigate(host, username, password)
+    if connection:
+
+
+        print(f'\nTime of Execution: {datetime.datetime.now()} SGT\n')
+        print(f'{"="*10} Getting list of VDOM {"="*10}')
+        output = execute_commands(connection, catchvdom)  
+        connection.disconnect()
+    
+    # Use regular expression to extract the names
+    pattern = r"name=([^/]+)"
+    names = re.findall(pattern, output)
+    #print(names)
+    cleaned_names = []
+    for name in names:
+        cleaned_names.append(name.replace('\nname=', ''))
+    vdom_list = [name for name in cleaned_names if not name.startswith('vsys')]   
+    # Print the extracted cleaned names
+    print("\n",vdom_list)
+    print(f'\n{"="*10} Completed and Exiting {"="*10}')
+    print(f'\nTime of Completion: {datetime.datetime.now()} SGT')
 
 def dictionary(x):
     match x:
@@ -108,10 +138,10 @@ def userchoice(x):
 
 def mainmenu():
     global useroutput
-    script.Vdom() 
+    vdom() 
     while menu == True:
         try:
-            user_choice = input("Please select which you would like to harden:\
+            user_choice = input("\nPlease select which you would like to harden:\
                                 \n1. Network\
                                 \n2. System\
                                 \n3. Policy_and_object\

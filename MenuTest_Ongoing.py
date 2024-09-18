@@ -39,8 +39,7 @@ def userchoice(x):
             menu = False
 
 def main():
-    global output
-    script.Vdom()   
+    global output  
     while menu == True:
         try:
             user_choice = input("Please select which you would like to harden:\
