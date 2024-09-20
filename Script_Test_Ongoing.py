@@ -343,6 +343,8 @@ def Security_profiles():
         commands = [
         # 4.2.6 Ensure inline scanning with FortiGuard AI-Based Sandbox Service is enabled
         #not complete
+
+
         ]
         if level == "2":        
             profile_name = input("Please enter profile to be edited: ")
@@ -463,29 +465,33 @@ def Security_Fabric():
 
 #vpn - done (vdom) (Level 2)
 def VPN():
-    global vc, total
+    global vc, total, scriptvdom
     if vc == 1:
         return None
     else:
         commands = [
             "end",
-            "config vdom",
-            f"edit {vdom}",
-
+        ]
+        if level == "2":
+            for item in range(0,len(scriptvdom)):
+                vdomcommands = [
+                                "config vdom",
+                                f"edit {scriptvdom[item]}",
+                                "config vpn ssl settings",
+                                "set ssl-max-prot-ver tls1-3",
+                                "set ssl-min-proto ver tls1-2",
+                                "set algorithm high",
+                                "end",
+                                "end",
+                                ]
+                commands.extend(vdomcommands)
             # 6.1.1 Apply a Trusted Signed Certificate for VPN Portal
             # No CLI command, complete step in GUI
 
             # 6.1.2 Enable Limited TLS Versions for SSL VPN (vdom)
-            "config vpn ssl settings",
-            "set ssl-max-prot-ver tls1-3",
-            "set ssl-min-proto ver tls1-2",
-            "set algorithm high",
 
-            "end",
-            "end",
-            "config global",
+            commands.extend(["end, config global",])
 
-        ]
     vc = 1
     total += 1
     
@@ -498,26 +504,29 @@ def Logs_and_reports():
         return None
     else:
         commands = [
-            "end",
-            "config vdom",
-            f"edit {vdom}",
-            # 7.1.1 Enable Event Logging (vdom)
-            "config log eventfilter",
-            "set event enable",
-            "end",
-            "end",
-           
-            "config global",
             # 7.2.1 Encrypt Log Transmission to FortiAnalyzer / FortiManager (global)
             "config log fortianalyzer setting",
             "set status enable",
             "set reliable enable",
             "set enc-algorithm high",
             "end",
-
+            ]
+        if level == "2":
+            commands.extend(["end,"])
+            for item in range(0,len(scriptvdom)):   
+                vdomcommands = [ 
+                    "config vdom", 
+                    f"edit {scriptvdom[item]}",
+                    # 7.1.1 Enable Event Logging (vdom)
+                    "config log eventfilter",
+                    "set event enable",
+                    "end",
+                    "end",
+                ]
+                commands.extend(vdomcommands)
+            commands.extend(["end, config global",])          
             # 7.3.1 Centralized Logging and Reporting
             # No CLI command, complete step in GUI
-        ]
     larc = 1
     total += 1
     
