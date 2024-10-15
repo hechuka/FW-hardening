@@ -1,4 +1,6 @@
 import getpass
+import re
+import string
 #import Integration_Ongoing
 nc = 0
 sc = 0
@@ -11,6 +13,36 @@ total = 0
 #scriptvdom = []
 level = 0
 scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
+profile_name = ['g-default', 'g-sniffer-profile', 'g-wifi-default']
+password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%^*?&])[\w@#$!^%*?&]{8,}$"
+
+def validate_password(password):
+    if not re.match(password_pattern, password):
+        return False
+    return True
+
+def createlst(VorP):
+    # creating an empty list
+    lst = []
+    # number of elements as input
+    if VorP == "vdom":
+        print(scriptvdom)
+    elif VorP == "profile":
+        print(profile_name)
+    selection = input(f"Do you want to harden all {VorP}? (Y/N): ")
+    if selection.lower() == "y":
+        if VorP == "vdom":
+            return scriptvdom
+        elif VorP == "profile":
+            return profile_name
+    elif selection.lower() == "n":        
+        n = int(input(f"Enter number of {VorP}: "))
+        # iterating till the range
+        for i in range(0, n):
+            ele = str(input(f"Please enter {VorP} {i+1}: "))
+            # adding the element
+            lst.append(ele)
+        return lst 
 
 #network - done (global) (Level 1)
 def network():
@@ -66,10 +98,26 @@ def system():
         return None
     else:
 
-        timezone = input("Please enter the timezone(E.g. 8): ")
-        password = getpass.getpass(prompt='Please enter new password for admin: ')
+        timezone = input("Please enter the timezone(E.g. 01, 57(SGT)): ")
+
+        while True:
+            password = getpass.getpass(prompt='Please enter new password for admin: ')
+            if validate_password(password):
+                print("Password valid!")
+                break
+            else:
+                print("Password invalid. Please follow the requirements:")
+                print("- Minimum 8 characters")
+                print("- At least one uppercase letter")
+                print("- At least one lowercase letter")
+                print("- At least one digit")
+                print("- At least one special character")
+
+
+        #password = getpass.getpass(prompt='Please enter new password for admin: ')
+
         port_number = input("Please enter which port to allow only HTTPS access to the GUI and SSH access(E.g. port1): ")
-        id = input("Please enter ID: ")
+        ver = input("Is the current version 7.2.4 and above?(E.g. Y/N): ")
         commands = [
                 # 2.1.1 Ensure 'Pre-Login Banner' is set /
                 "config system global",
@@ -131,11 +179,6 @@ def system():
                 "set gui-cdn-usage enable",
                 "end",
 
-                # # 2.1.12 Ensure single CPU core overloaded event is logged (not available in current version)
-                # "config system global",
-                # "set log-single-cpu-high enable",
-                # "end",
-
                 # 2.2.1 Ensure 'Password Policy' is enabled /
                 "config system password-policy", 
                 "set status enable",
@@ -160,9 +203,9 @@ def system():
                 'config system snmp sysinfo',
                 'set status enable',
                 'end',
-                'config system snmp community',
-                'delete public',
-                'end',
+                #'config system snmp community',
+                #'delete public',
+                #'end',
                 'config system snmp user',
                 'edit "snmp_test"',
                 'set security-level auth-priv',
@@ -226,17 +269,18 @@ def system():
                 "end",
 
                 # Need to clarify
+                # ignore first
                 # 2.4.6 Apply Local-in Policies
-                "config firewall {local-in-policy | local-in-policy6}",
-                "edit <policy_number>",
-                "set intf <interface>",
-                "set srcaddr <source_address> [source_address] ...",
-                "set dstaddr <destination_address> [destination_address] ...",
-                "set action {accept | deny} set service <service_name> [service_name] ...",
-                "set schedule <schedule_name>",
-                "set comments <string>",
-                "next",
-                "end",
+                # "config firewall {local-in-policy | local-in-policy6}",
+                # "edit <policy_number>",
+                # "set intf <interface>",
+                # "set srcaddr <source_address> [source_address] ...",
+                # "set dstaddr <destination_address> [destination_address] ...",
+                # "set action {accept | deny} set service <service_name> [service_name] ...",
+                # "set schedule <schedule_name>",
+                # "set comments <string>",
+                # "next",
+                # "end",
 
                 # Example
                 # 'config firewall address',
@@ -245,7 +289,8 @@ def system():
                 # 'next',
                 # 'end',
                 # 'config firewall local-in-policy',
-                # 'edit 1 set intf "port1"',
+                # 'edit 1', 
+                # 'set intf "port1"',
                 # 'set srcaddr "10.10.10.0"',
                 # 'set dstaddr "all"',
                 # 'set service "PING"',
@@ -256,17 +301,10 @@ def system():
                 # 2.4.7 Ensure default Admin ports are changed
                 'config system global',
                 'set admin-https-redirect disable',
-                'set admin-port 8082 **(or any other uncommon port)**',
+                'set admin-port 8082', #**(or any other uncommon port)**
                 'set admin-server-cert "self-sign"',
-                'set admin-sport 4343 **(or any other uncommon port)**',
+                'set admin-sport 4343', #**(or any other uncommon port)**
                 'end',
-
-                # 2.4.8 Virtual patching on the local-in management interface
-                "config firewall local-in-policy",
-                f"edit {id}",
-                "set virtual-patch enable",
-                "next",
-                "end",
                 
                 # 2.5.1 Ensure High Availability configuration is enabled
                 'config system ha',
@@ -276,7 +314,6 @@ def system():
                 'set hbdev port10 50',   ###(Set Heartbeat Interface and priority)
                 'end',
 
-                # set password ENC does not change
                 # 2.5.2 Ensure "Monitor Interfaces" for High Availability devices is enabled
                 "config system ha",
                 'set monitor "port6" "port7"',
@@ -293,6 +330,22 @@ def system():
                 'end',
 
     ]
+    if ver.upper() == "Y":
+        id = input("Please enter ID: ")
+        commands.extend([
+                #2.1.12 Ensure single CPU core overloaded event is logged (not available in current version)
+                "config system global",
+                "set log-single-cpu-high enable",
+                "end",
+                
+                # 2.4.8 Virtual patching on the local-in management interface (not available in current version)
+                "config firewall local-in-policy",
+                f"edit {id}",
+                "set virtual-patch enable",
+                "next",
+                "end",
+                ])
+
     sc = 1
     total += 1
     return commands
@@ -308,10 +361,11 @@ def Policy_and_object():
         commands = [
             "end",                 
         ]
-        for item in range(0,len(scriptvdom)):
+        lst = createlst("vdom")
+        for item in range(0,len(lst)):
             vdomcommands = [
                 "config vdom",  
-                f"edit {scriptvdom[item]}",
+                f"edit {lst[item]}",
                 # 3.2 Ensure that policies do not use "ALL" as Service (vdom)
                 'config firewall policy',
                 'edit 1',
@@ -327,7 +381,7 @@ def Policy_and_object():
             # 3.4 Ensure logging is enabled on all firewall policies
             # No CLI command, complete step in GUI
 
-        commands.extend(["end", "config global",])
+        commands.extend(["config global",])
             
     #print(commands)    
     paoc = 1
@@ -343,30 +397,36 @@ def Security_profiles():
         commands = [
         # 4.2.6 Ensure inline scanning with FortiGuard AI-Based Sandbox Service is enabled
         #not complete
-
+        # ignore first
 
         ]
         if level == "2":        
-            profile_name = input("Please enter profile to be edited: ")
-            commands.extend([
+            #profile_name = input("Please enter profile to be edited: ")
+            commands = [
                 # 4.2.1 Ensure Antivirus Definition Push Updates are Configured (global)
                 "config system autoupdate schedule",
                 "set status enable",
                 "set frequency automatic",
                 "end",
+            ]
+            lst = createlst("profile")
+            for item in range(0,len(lst)):
+                profilecommands = [                    
+                    # 4.4.2 Block applications running on non-default ports (global)
+                    'config application list',
+                    f'edit "{lst[item]}"',
+                    'set enforce-default-app-port enable',
+                    'end',
+                    "end",
+                    ]
+                commands.extend(profilecommands)
 
-                # 4.4.2 Block applications running on non-default ports (global)
-                'config application list',
-                f'edit "{profile_name}"',
-                'set enforce-default-app-port enable',
-                'end',
-                "end",
-            ])
-            for item in range(0,len(scriptvdom)):
+            lst = createlst("vdom")
+            for item in range(0,len(lst)):
                 vdomcommands = [
                     # 4.2.4 Enable AI /heuristic based malware detection (vdom)
                     "config vdom",
-                    f"edit {scriptvdom[item]}",
+                    f"edit {lst[item]}",
 
                     "config antivirus settings",
                     "set machine-learning-detection enable",
@@ -379,7 +439,7 @@ def Security_profiles():
                     "end",
                 ]
                 commands.extend(vdomcommands)
-            commands.extend(["end", "config global",])
+            commands.extend(["config global",])
                 # 4.1.1 Detect Botnet connections
                 # No CLI command, complete step in GUI
 
@@ -473,13 +533,14 @@ def VPN():
             "end",
         ]
         if level == "2":
-            for item in range(0,len(scriptvdom)):
+            lst = createlst("vdom")
+            for item in range(0,len(lst)):
                 vdomcommands = [
                                 "config vdom",
-                                f"edit {scriptvdom[item]}",
+                                f"edit {lst[item]}",
                                 "config vpn ssl settings",
-                                "set ssl-max-prot-ver tls1-3",
-                                "set ssl-min-proto ver tls1-2",
+                                "set ssl-max-proto-ver tls1-3",
+                                "set ssl-min-proto-ver tls1-2",
                                 "set algorithm high",
                                 "end",
                                 "end",
@@ -490,7 +551,7 @@ def VPN():
 
             # 6.1.2 Enable Limited TLS Versions for SSL VPN (vdom)
 
-            commands.extend(["end, config global",])
+            commands.extend(["config global",])
 
     vc = 1
     total += 1
@@ -505,6 +566,7 @@ def Logs_and_reports():
     else:
         commands = [
             # 7.2.1 Encrypt Log Transmission to FortiAnalyzer / FortiManager (global)
+            ""
             "config log fortianalyzer setting",
             "set status enable",
             "set reliable enable",
@@ -513,10 +575,11 @@ def Logs_and_reports():
             ]
         if level == "2":
             commands.extend(["end,"])
-            for item in range(0,len(scriptvdom)):   
+            lst = createlst("vdom")
+            for item in range(0,len(lst)):   
                 vdomcommands = [ 
                     "config vdom", 
-                    f"edit {scriptvdom[item]}",
+                    f"edit {lst[item]}",
                     # 7.1.1 Enable Event Logging (vdom)
                     "config log eventfilter",
                     "set event enable",
@@ -524,7 +587,7 @@ def Logs_and_reports():
                     "end",
                 ]
                 commands.extend(vdomcommands)
-            commands.extend(["end, config global",])          
+            commands.extend(["config global",])          
             # 7.3.1 Centralized Logging and Reporting
             # No CLI command, complete step in GUI
     larc = 1

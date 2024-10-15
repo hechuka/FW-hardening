@@ -1,6 +1,8 @@
 import Script_Test_Ongoing as script
 output = ['config global',]
 menu = True
+
+
 def dictionary(x):
     match x:
         case '1':
