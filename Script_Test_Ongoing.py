@@ -10,10 +10,14 @@ sfc = 0
 vc = 0
 larc = 0
 total = 0
-#scriptvdom = []
+scriptvdom = []
+profile_name = []
+nested_list = []
 level = 0
-scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
-profile_name = ['g-default', 'g-sniffer-profile', 'g-wifi-default']
+username = ""
+# scriptvdom = ['root', 'OM-VDOM', 'SIG-VDOM', 'SS7_1-VDOM', 'SS7_2-VDOM']
+# profile_name = ['g-default', 'g-sniffer-profile', 'g-wifi-default']
+# nested_list = [['DMZ'], ['CH_Internal', 'CH_OM', 'CH_Access', 'OM_External'], ['SIG_Internal', 'SIG_External', 'SIG_OM_External'], ['SS7_1_Internal', 'SS7_1_External'], ['SS7_2_Internal', 'SS7_2_External']]
 password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%^*?&])[\w@#$!^%*?&]{8,}$"
 
 def validate_password(password):
@@ -49,43 +53,48 @@ def network():
     global nc, total
     if nc == 1:
         return None
-    else:
-        zone = input("Does your FW have zone?(Yes/No)")
+    else:       
         port_number = input("Please enter the WAN port to disable all management related services(E.g. port1): ")
-        if zone.lower() == "yes":
-            commands = [
-                # 1.1 Ensure DNS server is configured
-                "config system dns",
-                "set primary 8.8.8.8",
-                "set secondary 8.8.4.4",
-                "end",  
+        zone = input("Does your FW have zone?(Yes/No)")
+        commands = [
+            'config global',
+            # 1.1 Ensure DNS server is configured
+            "config system dns",
+            "set primary 8.8.8.8",
+            "set secondary 8.8.4.4",
+            "end",  
 
+            # 1.3 Disable all management related services on WAN port
+            "config system interface",
+            f'edit "{port_number}"',
+            "unselect allowaccess ping https ssh snmp http radius-acct",
+            "end",
+            "end",
+            ]
+        if zone.lower() == "yes" or zone.lower() == "y":
+            print('1.2 Ensure intra-zone traffic is not always allowed')
+            lst = createlst("vdom")
+            for item in range(0,len(lst)):
+                commands.extend([
                 # 1.2 Ensure intra-zone traffic is not always allowed
-                "config system zone",
-                "edit DMZ",
-                "set intrazone deny",
-                "end",
-
-                # 1.3 Disable all management related services on WAN port
-                "config system interface",
-                f'edit "{port_number}"',
-                "unselect allowaccess ping https ssh snmp http radius-acct",
-                "end",
-            ]
-        else:
-            commands = [
-                # 1.1 Ensure DNS server is configured
-                "config system dns",
-                "set primary 8.8.8.8",
-                "set secondary 8.8.4.4",
-                "end",  
-
-                # 1.3 Disable all management related services on WAN port
-                "config system interface",
-                f'edit "{port_number}"',
-                "unselect allowaccess ping https ssh snmp http radius-acct",
-                "end",
-            ]
+                "config vdom",
+                f"edit {lst[item]}", 
+                ])
+                count = 0
+                for test in range(0,len(scriptvdom)):                                       
+                    if lst[item] == scriptvdom[test]:
+                        break
+                    else:
+                        count+=1
+                for zitem in range(0,len(nested_list[count])):                   
+                    zone_nested = [
+                        "config system zone",
+                        f"edit {nested_list[count][zitem]}",
+                        "set intrazone deny",
+                        "end",
+                    ]
+                    commands.extend(zone_nested)
+                commands.extend(["end",])
     nc = 1
     total += 1
     
@@ -93,15 +102,26 @@ def network():
 
 #system - undone (global) (Level 1 and 2)
 def system():
-    global sc, total
+    global sc, total, username
     if sc == 1:
         return None
     else:
-
+        print(f"username: {username}")
         timezone = input("Please enter the timezone(E.g. 01, 57(SGT)): ")
+        prebanner = input("Do you want to enable prebanner?(y/n): ")
+        if prebanner.lower() == "y":
+            prebannerstatus = "enable"
+        else:
+            prebannerstatus = "disable"
+        postbanner = input("Do you want to enable postbanner?(y/n): ")
+        if postbanner.lower() == "y":
+            postbannerstatus = "enable"
+        else:
+            postbannerstatus = "disable"            
+        #username = input("Please enter the username ")
 
         while True:
-            password = getpass.getpass(prompt='Please enter new password for admin: ')
+            password = getpass.getpass(prompt=f'Please enter new password for {username}: ')
             if validate_password(password):
                 print("Password valid!")
                 break
@@ -119,14 +139,15 @@ def system():
         port_number = input("Please enter which port to allow only HTTPS access to the GUI and SSH access(E.g. port1): ")
         ver = input("Is the current version 7.2.4 and above?(E.g. Y/N): ")
         commands = [
+                'config global',
                 # 2.1.1 Ensure 'Pre-Login Banner' is set /
                 "config system global",
-                "set pre-login-banner enable",
+                f"set pre-login-banner {prebannerstatus}",
                 "end",
 
                 # 2.1.2 Ensure 'Post-Login-Banner' is set /
                 "config system global",
-                "set post-login-banner enable",
+                f"set post-login-banner {postbannerstatus}",
                 "end",
 
                 # 2.1.3 Ensure timezone is properly configured /
@@ -222,39 +243,39 @@ def system():
                 'end',
 
                 # 2.4.1 Ensure default 'admin' password is changed
-                'config system admin',
-                'edit "admin"',
-                f'set password {password}',
-                'end',
+                # 'config system admin',
+                # f'edit {username}',
+                # f'set password {password}',
+                # 'end',
 
                 # 2.4.2 Ensure all the login accounts having specific trusted hosts enabled
                 # unsure what to add
                 # remove trusted host
-                'config system admin',
-                'edit "test_admin"',
-                'unset trusthost1',
-                'end',
+                # 'config system admin',
+                # 'edit "test_admin"',
+                # 'unset trusthost1',
+                # 'end',
                 # add trusted host
-                'config system admin',
-                'edit "test_admin"',
-                'set trusthost6 1.1.1.1 255.255.255.255',
-                'end',
+                # 'config system admin',
+                # 'edit "test_admin"',
+                # 'set trusthost6 1.1.1.1 255.255.255.255',
+                # 'end',
                 
                 # 2.4.3 Ensure admin accounts with different privileges have their correct profiles assigned
                 # Provide the profile "tier_1" the ability to view and modify address objects
-                'config system accprofile',
-                'edit "tier_1"',
-                'set fwgrp custom',
-                'config fwgrp-permission',
-                'set address read-write',
-                'end',
-                'end',
+                # 'config system accprofile',
+                # 'edit "tier_1"',
+                # 'set fwgrp custom',
+                # 'config fwgrp-permission',
+                # 'set address read-write',
+                # 'end',
+                # 'end',
 
                 # Assign the profile "tier_1" to the account "support1".
-                'config system admin',
-                'edit "support1"',
-                'set accprofile "tier_1"',
-                'end',
+                # 'config system admin',
+                # 'edit "support1"',
+                # 'set accprofile "tier_1"',
+                # 'end',
 
                 # 2.4.4 Ensure idle timeout time is configured (Level 1)
                 "config system global",
@@ -299,12 +320,12 @@ def system():
                 # 'end',
 
                 # 2.4.7 Ensure default Admin ports are changed
-                'config system global',
-                'set admin-https-redirect disable',
-                'set admin-port 8082', #**(or any other uncommon port)**
-                'set admin-server-cert "self-sign"',
-                'set admin-sport 4343', #**(or any other uncommon port)**
-                'end',
+                # 'config system global',
+                # 'set admin-https-redirect disable',
+                # 'set admin-port 8082', #**(or any other uncommon port)**
+                # 'set admin-server-cert "self-sign"',
+                # 'set admin-sport 4343', #**(or any other uncommon port)**
+                # 'end',
                 
                 # 2.5.1 Ensure High Availability configuration is enabled
                 'config system ha',
@@ -358,9 +379,8 @@ def Policy_and_object():
     else:       
         # 3.1 Ensure that unused policies are reviewed regularly
         # No CLI command, complete step in GUI
-        commands = [
-            "end",                 
-        ]
+        commands = []
+        print('3.2 Ensure that policies do not use "ALL" as Service')
         lst = createlst("vdom")
         for item in range(0,len(lst)):
             vdomcommands = [
@@ -403,12 +423,14 @@ def Security_profiles():
         if level == "2":        
             #profile_name = input("Please enter profile to be edited: ")
             commands = [
+                'config global',
                 # 4.2.1 Ensure Antivirus Definition Push Updates are Configured (global)
                 "config system autoupdate schedule",
                 "set status enable",
                 "set frequency automatic",
                 "end",
             ]
+            print('4.4.2 Block applications running on non-default ports')
             lst = createlst("profile")
             for item in range(0,len(lst)):
                 profilecommands = [                    
@@ -416,11 +438,11 @@ def Security_profiles():
                     'config application list',
                     f'edit "{lst[item]}"',
                     'set enforce-default-app-port enable',
-                    'end',
-                    "end",
+                    'end',                    
                     ]
                 commands.extend(profilecommands)
-
+            commands.extend(["end",])
+            print('# 4.2.4 Enable AI /heuristic based malware detection')
             lst = createlst("vdom")
             for item in range(0,len(lst)):
                 vdomcommands = [
@@ -432,14 +454,14 @@ def Security_profiles():
                     "set machine-learning-detection enable",
 
                     # 4.2.5 Enable grayware detection on antivirus (vdom)
-                    "config antivirus settings",
+                    #"config antivirus settings",
                     "set grayware enable",
 
                     "end",
                     "end",
                 ]
                 commands.extend(vdomcommands)
-            commands.extend(["config global",])
+            #commands.extend(["config global",])
                 # 4.1.1 Detect Botnet connections
                 # No CLI command, complete step in GUI
 
@@ -482,7 +504,7 @@ def Security_Fabric():
         return None
     else:
         commands = [
-
+            'config global',
             # 5.1.1 Enable Compromised Host Quarantine (Level 1)
             'config system automation-action',
             'edit "Quarantine on FortiSwitch + FortiAP"',
@@ -529,10 +551,13 @@ def VPN():
     if vc == 1:
         return None
     else:
-        commands = [
-            "end",
-        ]
+        commands = []
         if level == "2":
+            # 6.1.1 Apply a Trusted Signed Certificate for VPN Portal
+            # No CLI command, complete step in GUI
+
+            # 6.1.2 Enable Limited TLS Versions for SSL VPN (vdom)
+            print('6.1.2 Enable Limited TLS Versions for SSL VPN')
             lst = createlst("vdom")
             for item in range(0,len(lst)):
                 vdomcommands = [
@@ -546,12 +571,9 @@ def VPN():
                                 "end",
                                 ]
                 commands.extend(vdomcommands)
-            # 6.1.1 Apply a Trusted Signed Certificate for VPN Portal
-            # No CLI command, complete step in GUI
 
-            # 6.1.2 Enable Limited TLS Versions for SSL VPN (vdom)
 
-            commands.extend(["config global",])
+            #commands.extend(["config global",])
 
     vc = 1
     total += 1
@@ -566,15 +588,16 @@ def Logs_and_reports():
     else:
         commands = [
             # 7.2.1 Encrypt Log Transmission to FortiAnalyzer / FortiManager (global)
-            ""
-            "config log fortianalyzer setting",
-            "set status enable",
-            "set reliable enable",
-            "set enc-algorithm high",
-            "end",
+            # 'config global',
+            # "config log fortianalyzer setting",
+            # "set status enable",
+            # "set reliable enable",
+            # "set enc-algorithm high",
+            # "end",
             ]
+        # commands.extend(["end"])    
         if level == "2":
-            commands.extend(["end,"])
+            print('7.1.1 Enable Event Logging')           
             lst = createlst("vdom")
             for item in range(0,len(lst)):   
                 vdomcommands = [ 
@@ -587,7 +610,7 @@ def Logs_and_reports():
                     "end",
                 ]
                 commands.extend(vdomcommands)
-            commands.extend(["config global",])          
+            #commands.extend(["config global",])          
             # 7.3.1 Centralized Logging and Reporting
             # No CLI command, complete step in GUI
     larc = 1

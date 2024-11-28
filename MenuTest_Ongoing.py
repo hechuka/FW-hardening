@@ -1,7 +1,6 @@
 import Script_Test_Ongoing as script
-output = ['config global',]
+output = []
 menu = True
-
 
 def dictionary(x):
     match x:
@@ -42,9 +41,13 @@ def userchoice(x):
 
 def level():
     script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
+    print(script.level)
+    while int(script.level) < 1 or int(script.level) > 2:
+        script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
 
 def main():
-    global output
+    global output, lst, user_choice, outputlist
+    outputlist = []
     while menu == True:
         try:
             if script.level == "1":
@@ -80,7 +83,8 @@ def main():
                         continue               
                     for item in range(7):
                         try:
-                            output.extend(userchoice(str(item + 1)))                        
+                            output.append(userchoice(str(item + 1)))
+                            outputlist.append(str(item + 1))                        
                         except:
                             print(f"{dictionary(str(item + 1))} hardened.")
                     print(output)
@@ -90,11 +94,13 @@ def main():
                         continue               
                     for item in range(5):
                         try:
-                            output.extend(userchoice(str(item + 1)))                        
+                            output.append(userchoice(str(item + 1)))
+                            outputlist.append(str(item + 1))                        
                         except:
                             print(f"{dictionary(str(item + 1))} hardened.")
                     try:
-                        output.extend(userchoice("7"))                    
+                        output.append(userchoice("7"))
+                        outputlist.append("7")                    
                     except:
                         print(f"{dictionary("7")} hardened.")
                     print(output)
@@ -122,10 +128,12 @@ def main():
                         lst.append(ele) 
                     for item in lst:
                         try:
-                            output.extend(userchoice(item))                        
+                            output.append(userchoice(item))
+                            outputlist.append(str(item))                        
                         except:
                             print(f"{dictionary(item)} hardened.")
                     print(output)
+                    print(lst)
                 elif script.level == "1":
                     if script.total == 6:
                         print("Everything has been hardened.")
@@ -148,10 +156,12 @@ def main():
                         lst.append(ele) 
                     for item in lst:
                         try:
-                            output.extend(userchoice(item))                        
+                            output.append(userchoice(item))
+                            outputlist.append(str(item))                        
                         except:
                             print(f"{dictionary(item)} hardened.")
-                    print(output)
+                    print(output)                   
+                    print(lst)
                         
             elif user_choice == "0":
                 userchoice(user_choice)
@@ -162,7 +172,8 @@ def main():
                 print("Please enter a number between 1 to 9")
             else:
                 try:
-                    output.extend(userchoice(user_choice))                    
+                    output.append(userchoice(user_choice))
+                    outputlist.append(str(user_choice))                    
                 except:
                     print(f"{dictionary(user_choice)} hardened.")
                 print(output)
@@ -172,3 +183,6 @@ def main():
 if __name__ == "__main__":
     level()
     main()
+    for i in range(0, len(outputlist)):
+        print(f'{"="*10} Processing Hardening on FW for {dictionary(outputlist[i])} {"="*10}')
+        print(output[i])  

@@ -5,8 +5,10 @@ import Script_Test_Ongoing as script
 import re
 
 menu = True
-useroutput = ['config global',]
+useroutput = []
 vdom_list = []
+profile_list = []
+zone_list = []
 #useroutput = ""
 # Getting the Password but without showing the password; Otherwise use input() for normal data request.
 defaultStr = input('Default IP/Username? Type "y" for default values: ')
@@ -20,16 +22,32 @@ catchvdom = [
     "diagnose sys vd list | grep name=",
 ]
 
+catchprofile = [
+    "config global",
+    "config application list",
+    "get"
+]
+
+def catchzone(i):
+    catchzone = [
+        "config vdom",
+        f"edit {script.scriptvdom[i]}",
+        "config system zone",
+        "get"
+    ]
+    return catchzone
+
 # Remote Host Details
 if defaultStr.lower() == 'y':
     remoteHost = "10.10.101.2 "
     userStr = "nera"
     passStr = "3e4r5t^Y&U*I"
+    script.username = userStr
 else:
     remoteHost = input('IP of Remote Host: ')
     userStr = input('Username : ')
     passStr = getpass.getpass(prompt='FW Password: ')
-
+    script.username = userStr
 
 
 def connect_to_fortigate(host, username, password):
@@ -96,8 +114,56 @@ def vdom():
     # Print the extracted cleaned names
     print("\n",vdom_list)
     print(f'\n{"="*10} Completed and Exiting {"="*10}')
-    print(f'\nTime of Completion: {datetime.datetime.now()} SGT')
+    print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
     script.scriptvdom = vdom_list
+
+def profile():
+    global profile_list
+    host = remoteHost
+    username = userStr
+    password = passStr
+
+    print(f'{"="*10} Trying to connect to Fortigate FW.... {"="*10}')
+
+    connection = connect_to_fortigate(host, username, password)
+    if connection:
+
+
+        print(f'\nTime of Execution: {datetime.datetime.now()} SGT\n')
+        print(f'{"="*10} Getting list of profile {"="*10}')
+        output = execute_commands(connection, catchprofile)  
+        connection.disconnect()
+    
+    # Use regular expression to extract the names
+    pattern = r"== \[ (.*?) \]"
+    names = re.findall(pattern, output)
+    print(names)
+    script.profile_name = names
+    print(f'\n{"="*10} Completed and Exiting {"="*10}')
+    print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
+
+def zone():
+    global zone_list
+    host = remoteHost
+    username = userStr
+    password = passStr
+    print(f'{"="*10} Trying to connect to Fortigate FW.... {"="*10}')
+    print(f'\nTime of Execution: {datetime.datetime.now()} SGT\n')
+    for i in range(0, len(script.scriptvdom)):
+        connection = connect_to_fortigate(host, username, password)
+        if connection:           
+            print(f'{"="*10} Getting list of zone from {script.scriptvdom[i]} {"="*10}')
+            output = execute_commands(connection, catchzone(i))  
+            connection.disconnect()
+        
+        # Use regular expression to extract the names
+        pattern = r"== \[ (.*?) \]"
+        names = re.findall(pattern, output)
+        print(names)
+        script.nested_list.append(names)
+    print(f'\n{"="*10} Completed and Exiting {"="*10}')
+    print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
+    print(script.nested_list)
 
 def level():
     script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
@@ -141,10 +207,13 @@ def userchoice(x):
         case _:
             return "Please enter a number between 1 to 9"
 
-def mainmenu():
-    global useroutput    
+def main():
+    global useroutput, lst, outputlist
+    outputlist = []
     level()
     vdom()
+    profile()
+    zone()
     while menu == True:
         try:
             if script.level == "1":
@@ -180,7 +249,12 @@ def mainmenu():
                         continue               
                     for item in range(7):
                         try:
-                            useroutput.extend(userchoice(str(item + 1)))                        
+                            useroutput.append(userchoice(str(item + 1)))
+                            if useroutput[-1] == None:
+                                useroutput.pop()
+                                print(f"{dictionary(str(item + 1))} hardened.")
+                            else:
+                                outputlist.append(str(item + 1))                                                          
                         except:
                             print(f"{dictionary(str(item + 1))} hardened.")
                     print(useroutput)
@@ -190,11 +264,23 @@ def mainmenu():
                         continue               
                     for item in range(5):
                         try:
-                            useroutput.extend(userchoice(str(item + 1)))                        
+                            useroutput.append(userchoice(str(item + 1)))
+                            if useroutput[-1] == None:
+                                useroutput.pop()
+                                print(f"{dictionary(item + 1)} hardened.")
+                            else:
+                                outputlist.append(str(item + 1))                            
+                            outputlist.append(str(item + 1))                          
                         except:
                             print(f"{dictionary(str(item + 1))} hardened.")
                     try:
-                        useroutput.extend(userchoice("7"))                    
+                        useroutput.append(userchoice("7"))
+                        if useroutput[-1] == None:
+                            useroutput.pop()
+                            print(f"{dictionary("7")} hardened.")
+                            break
+                        else:
+                            outputlist.append("7")                                               
                     except:
                         print(f"{dictionary("7")} hardened.")
                     print(useroutput)
@@ -222,7 +308,12 @@ def mainmenu():
                         lst.append(ele) 
                     for item in lst:
                         try:
-                            useroutput.extend(userchoice(item))                        
+                            useroutput.append(userchoice(item))
+                            if useroutput[-1] == None:
+                                useroutput.pop()
+                                print(f"{dictionary(item)} hardened.")
+                            else:
+                                outputlist.append(str(item))                            
                         except:
                             print(f"{dictionary(item)} hardened.")
                     print(useroutput)
@@ -248,7 +339,12 @@ def mainmenu():
                         lst.append(ele) 
                     for item in lst:
                         try:
-                            useroutput.extend(userchoice(item))                        
+                            useroutput.append(userchoice(item))
+                            if useroutput[-1] == None:
+                                useroutput.pop()
+                                print(f"{dictionary(item)} hardened.")
+                            else:
+                                outputlist.append(str(item))                                                                                  
                         except:
                             print(f"{dictionary(item)} hardened.")
                     print(useroutput)
@@ -262,7 +358,13 @@ def mainmenu():
                 print("Please enter a number between 1 to 9")
             else:
                 try:
-                    useroutput.extend(userchoice(user_choice))                    
+                    useroutput.append(userchoice(user_choice))
+                    if useroutput[-1] == None:
+                        useroutput.pop()
+                        print(f"{dictionary(user_choice)} hardened.")
+                    else:
+                        outputlist.append(user_choice)
+                    print(outputlist)                   
                 except:
                     print(f"{dictionary(user_choice)} hardened.")
                 print(useroutput)
@@ -275,21 +377,19 @@ if __name__ == "__main__":
     username = userStr
     password = passStr
 
-    mainmenu()
+    main()
+    for i in range(0, len(outputlist)):
+        print(f'{"="*10} Trying to connect to Fortigate FW.... {"="*10}')
 
-    print(f'{"="*10} Trying to connect to Fortigate FW.... {"="*10}')
+        connection = connect_to_fortigate(host, username, password)
+        if connection:
 
-    connection = connect_to_fortigate(host, username, password)
-    if connection:
-
-
-        print(f'\nTime of Execution: {datetime.datetime.now()} SGT\n')
-        print(f'{"="*10} Processing Hardening on FW.... {"="*10}')
-        #print(useroutput)
-        output = execute_commands(connection, useroutput)
-        print(output)
-        
-        connection.disconnect()
+            print(f'\nTime of Execution: {datetime.datetime.now()} SGT\n')
+            print(f'{"="*10} Processing Hardening on FW for {dictionary(outputlist[i])} {"="*10}')
+            print(useroutput[i])
+            output = execute_commands(connection, useroutput[i])
+            print(output)
+            
+            connection.disconnect()
         print(f'\n{"="*10} Completed and Exiting {"="*10}')
-
         print(f'Time of Completion: {datetime.datetime.now()} SGT')
