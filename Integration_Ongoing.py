@@ -9,33 +9,13 @@ useroutput = []
 vdom_list = []
 profile_list = []
 zone_list = []
-#useroutput = ""
-# Getting the Password but without showing the password; Otherwise use input() for normal data request.
-defaultStr = input('Default IP/Username? Type "y" for default values: ')
 
 remoteHost = ""
 userStr = ""
 passStr = ""
 
-catchvdom = [
-    "config global",
-    "diagnose sys vd list | grep name=",
-]
-
-catchprofile = [
-    "config global",
-    "config application list",
-    "get"
-]
-
-def catchzone(i):
-    catchzone = [
-        "config vdom",
-        f"edit {script.scriptvdom[i]}",
-        "config system zone",
-        "get"
-    ]
-    return catchzone
+# Getting the Password but without showing the password; Otherwise use input() for normal data request.
+defaultStr = input('Default IP/Username? Type "y" for default values: ')
 
 # Remote Host Details
 if defaultStr.lower() == 'y':
@@ -50,7 +30,31 @@ else:
     script.username = userStr
 
 
-def connect_to_fortigate(host, username, password):
+#script to capture VDOM
+catchvdom = [
+    "config global",
+    "diagnose sys vd list | grep name=",
+]
+
+#script to capture Profile
+catchprofile = [
+    "config global",
+    "config application list",
+    "get"
+]
+
+#script to capture Zone
+def catchzone(i):
+    catchzone = [
+        "config vdom",
+        f"edit {script.scriptvdom[i]}",
+        "config system zone",
+        "get"
+    ]
+    return catchzone
+
+#connect to FW
+def connect_to_fortigate(host, username, password): 
     device = {
         'device_type': 'fortinet',
         'host': host,
@@ -68,7 +72,8 @@ def connect_to_fortigate(host, username, password):
     except Exception as e:
         print(f"Error connecting to {host}: {e}")
 
-def execute_commands(connection, commands):
+#push command to FW
+def execute_commands(connection, commands): 
     """
     Executes multiple commands on the FortiGate firewall.
 
@@ -86,6 +91,7 @@ def execute_commands(connection, commands):
 
     return output
 
+#retrieve list of VDOM
 def vdom():
     global vdom_list
     host = remoteHost
@@ -117,6 +123,7 @@ def vdom():
     print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
     script.scriptvdom = vdom_list
 
+#retrieve list of Profile
 def profile():
     global profile_list
     host = remoteHost
@@ -142,6 +149,7 @@ def profile():
     print(f'\n{"="*10} Completed and Exiting {"="*10}')
     print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
 
+#retrieve list of Zone from each VDOM
 def zone():
     global zone_list
     host = remoteHost
@@ -165,9 +173,11 @@ def zone():
     print(f'\nTime of Completion: {datetime.datetime.now()} SGT\n')
     print(script.nested_list)
 
+#Define level of hardening
 def level():
     script.level = input("Please select Level 1 or 2 hardening(E.g. 1): ")
 
+#case to identify the hardening
 def dictionary(x):
     match x:
         case '1':
@@ -185,6 +195,7 @@ def dictionary(x):
         case '7':
             return "Logs_and_reports"
 
+#case to select the hardening
 def userchoice(x):
     global menu
     match x:
@@ -207,6 +218,7 @@ def userchoice(x):
         case _:
             return "Please enter a number between 1 to 9"
 
+#UI for user to do selection
 def main():
     global useroutput, lst, outputlist
     outputlist = []
@@ -267,7 +279,7 @@ def main():
                             useroutput.append(userchoice(str(item + 1)))
                             if useroutput[-1] == None:
                                 useroutput.pop()
-                                print(f"{dictionary(item + 1)} hardened.")
+                                print(f"{dictionary(str(item + 1))} hardened.")
                             else:
                                 outputlist.append(str(item + 1))                            
                             outputlist.append(str(item + 1))                          
@@ -393,3 +405,4 @@ if __name__ == "__main__":
             connection.disconnect()
         print(f'\n{"="*10} Completed and Exiting {"="*10}')
         print(f'Time of Completion: {datetime.datetime.now()} SGT')
+    

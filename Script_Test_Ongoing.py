@@ -1,7 +1,6 @@
 import getpass
 import re
-import string
-#import Integration_Ongoing
+
 nc = 0
 sc = 0
 paoc = 0
@@ -20,6 +19,7 @@ username = ""
 # nested_list = [['DMZ'], ['CH_Internal', 'CH_OM', 'CH_Access', 'OM_External'], ['SIG_Internal', 'SIG_External', 'SIG_OM_External'], ['SS7_1_Internal', 'SS7_1_External'], ['SS7_2_Internal', 'SS7_2_External']]
 password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%^*?&])[\w@#$!^%*?&]{8,}$"
 
+#
 def validate_password(password):
     if not re.match(password_pattern, password):
         return False
